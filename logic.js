@@ -26,7 +26,7 @@ const history = model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
 
 
 // Определение движения тренда, уровней поддержки и сопротивления и текущего тренда
-
+const predictedValues = model.predict(tensorData);
 // Получаем предсказанные значения
 const predictedValuesData = Array.from(predictedValues.dataSync());
 const candles = data.map((candle, index) => {
