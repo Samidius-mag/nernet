@@ -20,6 +20,7 @@ const model = tf.sequential();
 model.add(tf.layers.dense({ units: 64, inputShape: [4], activation: 'relu' }));
 model.add(tf.layers.dense({ units: 1 }));
 model.compile({ optimizer: 'adam', loss: tf.losses.meanSquaredError });
+model.fit(tensorData, tensorData, {epochs: 10});
 
 // Обучаем модель
 const history = model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
