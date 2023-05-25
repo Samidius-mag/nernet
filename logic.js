@@ -1,12 +1,18 @@
-const tf = require('@tensorflow/tfjs-node');
+const tf = require('@tensorflow/tfjs');
 const fs = require('fs');
 
-// Читаем данные из файла price.json и преобразуем их в массив
+// Прочитайте данные из файла price.json и преобразуйте их в массив, который можно использовать для обучения нейросети TensorFlow.js.
+
 const data = JSON.parse(fs.readFileSync('price.json', 'utf8'));
 
-// Получаем значения скорости движения и объемов
-const prices = data.map(candle => [candle[1], candle[2]]);
+// Преобразуйте данные из строковых значений в числовые значения
+
+const prices = data.map(candle => [parseFloat(candle[1]), parseFloat(candle[2])]);
+
+// Создайте tensor из массива
 const tensorData = tf.tensor2d(prices);
+
+
 
 // Обучаем модель (2 слоя и 1 выходной результат)
 const model = tf.sequential();
