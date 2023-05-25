@@ -37,7 +37,7 @@ model.compile({ optimizer: 'adam', loss: 'meanSquaredError' });
 
 // Обучение модели на данных
 model.fit(inputTensor, outputTensor, {
-  epochs: 1000,
+  epochs: 36,
   callbacks: {
     onEpochEnd: (epoch, logs) => {
       const percent = ((epoch + 1) / 100) * 100;
