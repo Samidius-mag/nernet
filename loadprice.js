@@ -7,11 +7,11 @@ axios.get(url)
   .then(response => {
     const data = response.data.map(candle => ({
      
-      open: candle[0],
-      high: candle[1],
-      low: candle[2],
-      close: candle[3],
-      volume: candle[4],
+      open: candle[1],
+      high: candle[2],
+      low: candle[3],
+      close: candle[4],
+      volume: candle[5],
       
       
     }));
