@@ -143,7 +143,13 @@ const fs = require('fs');
 
 // Загрузка данных из файла price.json
 const rawData = fs.readFileSync('price.json');
-const data = JSON.parse(rawData);
+const data = JSON.parse(rawData).map(candle => ({
+  open: parseFloat(candle.open),
+  high: parseFloat(candle.high),
+  low: parseFloat(candle.low),
+  close: parseFloat(candle.close),
+  volume: parseFloat(candle.volume),
+}));
 
 // Преобразование данных в тензоры
 const inputTensor = tf.tensor(data.map(candle => [
