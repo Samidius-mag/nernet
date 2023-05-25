@@ -34,7 +34,7 @@ model.compile({ optimizer: 'sgd', loss: 'categoricalCrossentropy' });
 // Обучаем модель на данных
 const xs = tf.tensor2d(inputs);
 const ys = tf.tensor2d(outputs);
-model.fit(xs, ys, { epochs: 1000 })
+model.fit(xs, ys, { epochs: 100 })
   .then(() => {
     // Используем модель для предсказания тренда
     const lastCandle = data[data.length - 1];
