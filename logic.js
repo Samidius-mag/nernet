@@ -59,9 +59,15 @@ model.fit(xs, ys, { epochs: 10 })
     const currentHourResistance = getResistance(currentHourData);
 
     // Определяем тренды
-    const monthTrend = getTrend(getPrediction(monthData));
-    const dayTrend = getTrend(getPrediction(dayData));
+    const monthTrend = getTrend(getPrediction(monthData, 0));
+    const dayTrend = getTrend(getPrediction(dayData, 0));
     const currentTrend = getTrend(prediction);
+
+    // Получаем предсказание тренда на 1, 4, 12 и 24 часа
+    const prediction1h = getPrediction(data.slice(-24), 0);
+    const prediction4h = getPrediction(data.slice(-96), 0);
+    const prediction12h = getPrediction(data.slice(-288), 0);
+    const prediction24h = getPrediction(data.slice(-576), 0);
 
     console.log('Тренд:', trend);
     console.log('Месячный уровень поддержки:', monthSupport);
@@ -75,6 +81,10 @@ model.fit(xs, ys, { epochs: 10 })
     console.log('Месячный тренд:', monthTrend);
     console.log('Дневной тренд:', dayTrend);
     console.log('Текущий тренд:', currentTrend);
+    console.log('Тренд на 1 час:', getTrend(prediction1h));
+    console.log('Тренд на 4 часа:', getTrend(prediction4h));
+    console.log('Тренд на 12 часов:', getTrend(prediction12h));
+    console.log('Тренд на 24 часа:', getTrend(prediction24h));
   })
   .catch(error => {
     console.error(error);
@@ -107,14 +117,17 @@ function getResistance(data) {
   return maxPrice;
 }
 
-// Функция для получения предсказания нейросети на основе массива данных
-function getPrediction(data) {
+// Функция для получения предсказания нейросети на основе массива данных и временного интервала
+function getPrediction(data, interval) {
   const inputs = data.map((candle, index) => {
     if (index === data.length - 1) {
       return null;
     }
     const currentCandle = candle;
-    const nextCandle = data[index + 1];
+    const nextCandle = data[index + 1 + interval];
+    if (!nextCandle) {
+      return null;
+    }
     const speed = nextCandle.close - currentCandle.close;
     const volume = nextCandle.volume;
     return [speed, volume];
