@@ -1,84 +1,68 @@
+const tf = require('@tensorflow/tfjs-node');
 const fs = require('fs');
-const theano = require('theano');
-const _ = require('lodash');
 
-// Загрузка данных из файла price.json
-const rawData = fs.readFileSync('price.json');
-const data = JSON.parse(rawData);
+// Читаем данные из файла price.json и преобразуем их в массив
+const data = JSON.parse(fs.readFileSync('price.json', 'utf8'));
 
-// Преобразование данных в формат, который можно использовать для обучения нейросети
-const input = [];
-const output = [];
+// Получаем значения скорости движения и объемов
+const prices = data.map(candle => [candle[1], candle[2]]);
+const tensorData = tf.tensor2d(prices);
 
-for (let i = 0; i < data.length - 1; i++) {
-  const currentCandle = data[i];
-  const nextCandle = data[i + 1];
+// Обучаем модель (2 слоя и 1 выходной результат)
+const model = tf.sequential();
+model.add(tf.layers.dense({units: 32, inputShape: [2],activation: 'relu'}));
+model.add(tf.layers.dense({units: 1}));
+model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
+model.fit(tensorData, tensorData, {epochs: 10});
 
-  const speed = (nextCandle.close - currentCandle.close) / currentCandle.close;
-  const volume = currentCandle.volume;
+// Получаем предсказанные значения
+const predictedValues = model.predict(tensorData);
 
-  input.push([speed, volume]);
 
-  if (speed > 0) {
-    output.push([1, 0, 0]); // Восходящий тренд
-  } else if (speed < 0) {
-    output.push([0, 1, 0]); // Нисходящий тренд
-  } else {
-    output.push([0, 0, 1]); // Боковой тренд
-  }
+// Определение движения тренда, уровней поддержки и сопротивления и текущего тренда
+
+// Получаем предсказанные значения
+const predictedValuesData = Array.from(predictedValues.dataSync());
+const candles = data.map((candle, index) => {
+    const [openPrice, closePrice] = candle;
+    return {
+        openPrice,
+        closePrice,
+        predictedPrice: predictedValuesData[index],
+    };
+});
+
+// Определяем движение тренда
+const closePrices = data.map(candle => candle[4]);
+const currentPrice = closePrices[closePrices.length - 1];
+const currentPredictedPrice = predictedValuesData[predictedValuesData.length - 1];
+const trend = currentPredictedPrice > currentPrice ? 'восходящий' : 'нисходящий';
+
+// Определение уровней поддержки и сопротивления
+const maxPrice = Math.max(...closePrices);
+const minPrice = Math.min(...closePrices);
+const resistanceLevel = maxPrice * 1.1;
+const supportLevel = minPrice * 0.9;
+
+// Определение месячного, дневного и текущего тренда
+const monthAgoClosePrices = closePrices.slice(0, 720);
+const monthAgoPredictedPrices = predictedValuesData.slice(0, 720);
+const monthAgoTrend = getTrend(monthAgoClosePrices, monthAgoPredictedPrices);
+const dayAgoClosePrices = closePrices.slice(-24);
+const dayAgoPredictedPrices = predictedValuesData.slice(-24);
+const dayAgoTrend = getTrend(dayAgoClosePrices, dayAgoPredictedPrices);
+const currentTrend = trend;
+
+// Функция для определения движения тренда
+function getTrend(closePrices, predictedPrices) {
+    const currentPrice = closePrices[closePrices.length - 1];
+    const currentPredictedPrice = predictedPrices[predictedPrices.length - 1];
+    return currentPredictedPrice > currentPrice ? 'восходящий' : 'нисходящий';
 }
 
-// Создание и обучение нейросети
-const X = theano.tensor.matrix('X');
-const y = theano.tensor.matrix('y');
-
-const numInputs = 2;
-const numHidden = 5;
-const numOutputs = 3;
-
-const W1 = theano.shared(_.random(-1, 1, [numInputs, numHidden]));
-const b1 = theano.shared(_.random(-1, 1, [numHidden]));
-const W2 = theano.shared(_.random(-1, 1, [numHidden, numOutputs]));
-const b2 = theano.shared(_.random(-1, 1, [numOutputs]));
-
-const hidden = theano.tensor.nnet.sigmoid(theano.tensor.dot(X, W1) + b1);
-const output = theano.tensor.nnet.softmax(theano.tensor.dot(hidden, W2) + b2);
-
-const cost = theano.tensor.nnet.categorical_crossentropy(output, y).mean();
-const params = [W1, b1, W2, b2];
-const gradients = theano.tensor.grad(cost, params);
-const updates = _.zipObject(params, _.map(gradients, gradient => gradient * 0.1));
-
-const train = theano.function([X, y], cost, { updates });
-
-for (let i = 0; i < 1000; i++) {
-  const cost = train(input, output);
-  console.log(`Эпоха ${i + 1}, стоимость ${cost}`);
-}
-
-// Определение движения тренда и уровней поддержки и сопротивления
-const lastCandle = data[data.length - 1];
-const speed = (lastCandle.close - data[data.length - 2].close) / data[data.length - 2].close;
-const volume = lastCandle.volume;
-
-const prediction = theano.function([X], output);
-const result = prediction([[speed, volume]]);
-
-if (result[0][0] > result[0][1] && result[0][0] > result[0][2]) {
-  console.log('Восходящий тренд');
-} else if (result[0][1] > result[0][0] && result[0][1] > result[0][2]) {
-  console.log('Нисходящий тренд');
-} else {
-  console.log('Боковой тренд');
-}
-
-const monthlyHigh = _.maxBy(data, 'high').high;
-const monthlyLow = _.minBy(data, 'low').low;
-const dailyHigh = _.maxBy(data.slice(data.length - 24), 'high').high;
-const dailyLow = _.minBy(data.slice(data.length - 24), 'low').low;
-
-const resistance = Math.max(monthlyHigh, dailyHigh);
-const support = Math.min(monthlyLow, dailyLow);
-
-console.log(`Уровень сопротивления: ${resistance}`);
-console.log(`Уровень поддержки: ${support}`);
+console.log('Движение тренда:', trend);
+console.log('Уровень поддержки:', supportLevel);
+console.log('Уровень сопротивления:', resistanceLevel);
+console.log('Месячный тренд:', monthAgoTrend);
+console.log('Дневной тренд:', dayAgoTrend);
+console.log('Текущий тренд:', currentTrend);
