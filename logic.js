@@ -25,6 +25,11 @@ model.compile({ optimizer: 'adam', loss: tf.losses.meanSquaredError });
 async function train() {
   const history = await model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
   console.log(history);
+
+  // Делаем прогноз на основе входных данных
+  const predictedValues = model.predict(inputs);
+  const predictedValuesData = Array.from(predictedValues.dataSync());
+  console.log(predictedValuesData);
 }
 train();
 
