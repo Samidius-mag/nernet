@@ -22,7 +22,7 @@ model.add(tf.layers.dense({ units: 1 }));
 model.compile({ optimizer: 'adam', loss: tf.losses.meanSquaredError });
 
 // Обучаем модель
-const history = await model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
+const history = model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
 
 
 // Определение движения тренда, уровней поддержки и сопротивления и текущего тренда
