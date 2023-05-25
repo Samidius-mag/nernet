@@ -1,25 +1,28 @@
 const tf = require('@tensorflow/tfjs');
 const fs = require('fs');
 
-// Прочитайте данные из файла price.json и преобразуйте их в массив, который можно использовать для обучения нейросети TensorFlow.js.
-
 const data = JSON.parse(fs.readFileSync('price.json', 'utf8'));
 
-// Преобразуйте данные из строковых значений в числовые значения
+// Отдельно извлекаем входные и выходные данные
+const [input, output] = data.reduce(([inputs, outputs], [date, open, high, low, close]) => {
+  return [
+    [...inputs, [open, high, low, close]],
+    [...outputs, [close]],
+  ];
+}, [[], []]);
 
-const prices = data.map(candle => [parseFloat(candle[1]), parseFloat(candle[2])]);
+// Создайте tensor из массивов
+const inputs = tf.tensor2d(input);
+const outputs = tf.tensor2d(output);
 
-// Создайте tensor из массива
-const tensorData = tf.tensor2d(prices);
-
-
-
-// Обучаем модель (2 слоя и 1 выходной результат)
+// Создаем модель и компилируем ее
 const model = tf.sequential();
-model.add(tf.layers.dense({units: 32, inputShape: [2],activation: 'relu'}));
-model.add(tf.layers.dense({units: 1}));
-model.compile({optimizer: 'sgd', loss: 'meanSquaredError'});
-model.fit(tensorData, tensorData, {epochs: 10});
+model.add(tf.layers.dense({ units: 64, inputShape: [4], activation: 'relu' }));
+model.add(tf.layers.dense({ units: 1 }));
+model.compile({ optimizer: 'adam', loss: tf.losses.meanSquaredError });
+
+// Обучаем модель
+const history = await model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
 
 // Получаем предсказанные значения
 const predictedValues = model.predict(tensorData);
