@@ -14,6 +14,7 @@ const [input, output] = data.reduce(([inputs, outputs], [date, open, high, low, 
 // Создайте tensor из массивов
 const inputs = tf.tensor2d(input);
 const outputs = tf.tensor2d(output);
+const tensorData = tf.tensor2d(prices);
 
 // Создаем модель и компилируем ее
 const model = tf.sequential();
