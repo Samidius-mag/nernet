@@ -22,10 +22,11 @@ model.add(tf.layers.dense({ units: 1 }));
 model.compile({ optimizer: 'adam', loss: tf.losses.meanSquaredError });
 
 // Обучаем модель
-const history = await model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
-
-// Получаем предсказанные значения
-const predictedValues = model.predict(tensorData);
+async function train() {
+  const history = await model.fit(inputs, outputs, { epochs: 100, batchSize: 32 });
+  console.log(history);
+}
+train();
 
 
 // Определение движения тренда, уровней поддержки и сопротивления и текущего тренда
